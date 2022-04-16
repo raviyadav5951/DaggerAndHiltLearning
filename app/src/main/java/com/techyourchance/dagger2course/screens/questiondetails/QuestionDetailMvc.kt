@@ -11,43 +11,29 @@ import androidx.annotation.IdRes
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.techyourchance.dagger2course.R
 import com.techyourchance.dagger2course.screens.common.toolbar.MyToolbar
-import com.techyourchance.dagger2course.screens.questionslist.QuestionsListViewMvc
+import com.techyourchance.dagger2course.screens.common.viewsmvc.BaseViewMvc
 
 class QuestionDetailMvc(
     layoutInflater: LayoutInflater,
     parent: ViewGroup?
+):BaseViewMvc<QuestionDetailMvc.DetailListener>(
+    layoutInflater,
+    parent,
+    R.layout.layout_question_details
 ) {
 
     private val toolbar: MyToolbar
     private val swipeRefresh: SwipeRefreshLayout
     private val txtQuestionBody: TextView
 
-    var rootView: View? = null
-    private val context: Context get() = rootView!!.context
 
-
-    fun <T : View> findViewById(@IdRes id: Int): T {
-        return rootView!!.findViewById<T>(id)
-    }
 
     interface DetailListener {
         fun onBackPressClicked()
     }
 
-    private val listeners = HashSet<DetailListener>()
-
-    fun registerListener(listener: DetailListener) {
-        listeners.add(listener)
-    }
-
-    fun unregisterListener(listener: DetailListener) {
-        listeners.remove(listener)
-    }
-
-
     init {
 
-        rootView = layoutInflater.inflate(R.layout.layout_question_details, parent, false)
         txtQuestionBody = findViewById(R.id.txt_question_body)
 
         // init toolbar
