@@ -12,6 +12,7 @@ import com.techyourchance.dagger2course.Constants
 import com.techyourchance.dagger2course.R
 import com.techyourchance.dagger2course.networking.StackoverflowApi
 import com.techyourchance.dagger2course.questions.FetchQuestionsUseCase
+import com.techyourchance.dagger2course.screens.common.dialogs.DialogManager
 import com.techyourchance.dagger2course.screens.common.dialogs.ServerErrorDialogFragment
 import com.techyourchance.dagger2course.screens.common.toolbar.MyToolbar
 import com.techyourchance.dagger2course.screens.questionslist.QuestionsListViewMvc
@@ -28,7 +29,7 @@ class QuestionDetailsActivity : AppCompatActivity(), QuestionDetailMvc.DetailLis
     private lateinit var questionId: String
 
     private lateinit var fetchQuestionsUseCase: FetchQuestionsUseCase
-
+    private lateinit var dialogManager: DialogManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -37,8 +38,11 @@ class QuestionDetailsActivity : AppCompatActivity(), QuestionDetailMvc.DetailLis
 
         fetchQuestionsUseCase= FetchQuestionsUseCase()
 
+        dialogManager= DialogManager(supportFragmentManager)
         // retrieve question ID passed from outside
         questionId = intent.extras!!.getString(EXTRA_QUESTION_ID)!!
+
+
     }
 
     override fun onStart() {
@@ -80,9 +84,7 @@ class QuestionDetailsActivity : AppCompatActivity(), QuestionDetailMvc.DetailLis
     }
 
     private fun onFetchFailed() {
-        supportFragmentManager.beginTransaction()
-                .add(ServerErrorDialogFragment.newInstance(), null)
-                .commitAllowingStateLoss()
+        dialogManager.showErrorDialogFragment()
     }
 
 
