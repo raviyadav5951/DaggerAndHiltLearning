@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import androidx.appcompat.app.AppCompatActivity
 import com.techyourchance.dagger2course.Constants
 import com.techyourchance.dagger2course.networking.StackoverflowApi
+import com.techyourchance.dagger2course.questions.FetchQuestionsUseCase
 import com.techyourchance.dagger2course.questions.Question
 import com.techyourchance.dagger2course.screens.common.dialogs.ServerErrorDialogFragment
 import com.techyourchance.dagger2course.screens.questiondetails.QuestionDetailsActivity
@@ -13,32 +14,28 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.*
 
-class QuestionsListActivity : AppCompatActivity(),QuestionsListViewMvc.Listener {
+class QuestionsListActivity : AppCompatActivity(), QuestionsListViewMvc.Listener {
 
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private lateinit var viewMvc: QuestionsListViewMvc
-    private lateinit var stackoverflowApi: StackoverflowApi
 
     private var isDataLoaded = false
+    private lateinit var fetchQuestionsUseCase: FetchQuestionsUseCase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewMvc= QuestionsListViewMvc(LayoutInflater.from(this),null)
+        viewMvc = QuestionsListViewMvc(LayoutInflater.from(this), null)
 
         setContentView(viewMvc.rootView)
-        // init retrofit
-        val retrofit = Retrofit.Builder()
-                .baseUrl(Constants.BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-        stackoverflowApi = retrofit.create(StackoverflowApi::class.java)
+        fetchQuestionsUseCase = FetchQuestionsUseCase()
+
     }
 
     override fun onStart() {
         super.onStart()
         viewMvc.registerListener(this)
-         if (!isDataLoaded) {
+        if (!isDataLoaded) {
             fetchQuestions()
         }
     }
@@ -53,16 +50,16 @@ class QuestionsListActivity : AppCompatActivity(),QuestionsListViewMvc.Listener 
         coroutineScope.launch {
             viewMvc.showProgressIndication()
             try {
-                val response = stackoverflowApi.lastActiveQuestions(20)
-                if (response.isSuccessful && response.body() != null) {
-                    viewMvc.bindQuestions(response.body()!!.questions)
-                    isDataLoaded = true
-                } else {
-                    onFetchFailed()
-                }
-            } catch (t: Throwable) {
-                if (t !is CancellationException) {
-                    onFetchFailed()
+                val result = fetchQuestionsUseCase.fetchLatestQuestions()
+                when (result) {
+                    is FetchQuestionsUseCase.Result.Success -> {
+                        isDataLoaded = true
+                        viewMvc.bindQuestions(result.questions)
+                    }
+                    is FetchQuestionsUseCase.Result.Failure -> {
+                        onFetchFailed()
+                    }
+
                 }
             } finally {
                 viewMvc.hideProgressIndication()
@@ -72,10 +69,9 @@ class QuestionsListActivity : AppCompatActivity(),QuestionsListViewMvc.Listener 
 
     private fun onFetchFailed() {
         supportFragmentManager.beginTransaction()
-                .add(ServerErrorDialogFragment.newInstance(), null)
-                .commitAllowingStateLoss()
+            .add(ServerErrorDialogFragment.newInstance(), null)
+            .commitAllowingStateLoss()
     }
-
 
 
     override fun OnRefreshClicked() {
