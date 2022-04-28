@@ -2,23 +2,13 @@ package com.techyourchance.dagger2course.screens.questiondetails
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.text.Html
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.techyourchance.dagger2course.Constants
-import com.techyourchance.dagger2course.R
-import com.techyourchance.dagger2course.networking.StackoverflowApi
-import com.techyourchance.dagger2course.questions.FetchQuestionsUseCase
+import com.techyourchance.dagger2course.MyApplication
+import com.techyourchance.dagger2course.questions.FetchQuestionDetailUseCase
+import com.techyourchance.dagger2course.screens.common.ScreensNavigator
 import com.techyourchance.dagger2course.screens.common.dialogs.DialogManager
-import com.techyourchance.dagger2course.screens.common.dialogs.ServerErrorDialogFragment
-import com.techyourchance.dagger2course.screens.common.toolbar.MyToolbar
-import com.techyourchance.dagger2course.screens.questionslist.QuestionsListViewMvc
 import kotlinx.coroutines.*
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 class QuestionDetailsActivity : AppCompatActivity(), QuestionDetailMvc.DetailListener {
 
@@ -28,20 +18,23 @@ class QuestionDetailsActivity : AppCompatActivity(), QuestionDetailMvc.DetailLis
     private lateinit var viewMvc: QuestionDetailMvc
     private lateinit var questionId: String
 
-    private lateinit var fetchQuestionsUseCase: FetchQuestionsUseCase
+    private lateinit var fetchQuestionDetailUseCase: FetchQuestionDetailUseCase
     private lateinit var dialogManager: DialogManager
+
+    private lateinit var screensNavigator: ScreensNavigator
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         viewMvc= QuestionDetailMvc(layoutInflater,null)
         setContentView(viewMvc.rootView)
-
-        fetchQuestionsUseCase= FetchQuestionsUseCase()
-
-        dialogManager= DialogManager(supportFragmentManager)
         // retrieve question ID passed from outside
         questionId = intent.extras!!.getString(EXTRA_QUESTION_ID)!!
 
+        fetchQuestionDetailUseCase= FetchQuestionDetailUseCase((application as MyApplication).stackoverflowApi)
+
+        dialogManager= DialogManager(supportFragmentManager)
+
+        screensNavigator= ScreensNavigator(this)
 
     }
 
@@ -63,15 +56,15 @@ class QuestionDetailsActivity : AppCompatActivity(), QuestionDetailMvc.DetailLis
         coroutineScope.launch {
             viewMvc.showProgressIndication()
             try {
-                val result=fetchQuestionsUseCase.fetchQuestionDetails(questionId)
+                val result=fetchQuestionDetailUseCase.fetchQuestionDetails(questionId)
                 when(result)
                 {
-                    is FetchQuestionsUseCase.Result.SuccessBody->{
+                    is FetchQuestionDetailUseCase.Result.Success->{
                         viewMvc.setQuestionBody(result.questionBody)
 
                     }
 
-                    is FetchQuestionsUseCase.Result.Failure->{
+                    is FetchQuestionDetailUseCase.Result.Failure->{
                         onFetchFailed()
                     }
                 }
@@ -99,6 +92,6 @@ class QuestionDetailsActivity : AppCompatActivity(), QuestionDetailMvc.DetailLis
     }
 
     override fun onBackPressClicked() {
-        onBackPressed()
+        screensNavigator.navigateBack()
     }
 }
